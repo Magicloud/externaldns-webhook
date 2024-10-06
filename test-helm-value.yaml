@@ -1,0 +1,10 @@
+provider:
+  name: webhook
+  webhook:
+    imagePullPolicy: Always
+    image:
+      repository: magicloud/dumb
+      tag: "e"
+    env:
+    - name: RUST_LOG
+      value: debug
