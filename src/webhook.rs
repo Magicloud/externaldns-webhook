@@ -16,6 +16,8 @@ use rocket::{
 };
 use std::sync::Arc;
 
+// TODO: a state trait to answer healthz and metrics
+
 #[derive(Debug)]
 pub struct Webhook {
     pub provider_address: String,

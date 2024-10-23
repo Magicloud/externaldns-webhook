@@ -1,6 +1,6 @@
 [package]
 name = "externaldns-dnsmasq"
-version = "2024.9.24"
+version = "2024.10.16"
 edition = "2021"
 
 [lib]
@@ -17,7 +17,7 @@ name = "dumb"
 [dependencies]
 anyhow = { version = "*" }
 rocket = { version = "*", features = ["json"] }
-tokio = { version = "*", features = ["rt"] }
+tokio = { version = "*", features = ["rt", "fs", "io-util"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = { version = "*" }
 regex = { version = "*" }
@@ -26,6 +26,12 @@ either = { version = "*" }
 log = { version = "*" }
 logcall = { version = "*" }
 dashmap = { version = "*", features = ["serde"] }
+# bin dep
+env_logger = { version = "*" }
+clap = { version = "*", features = ["derive"] }
+nonempty = { version = "*" }
+surrealdb = { version = "*", features = ["kv-surrealkv"] }
+itertools = { version = "*" }
+sha2 = { version = "*" }
 
 [dev-dependencies]
-env_logger = { version = "*" }
