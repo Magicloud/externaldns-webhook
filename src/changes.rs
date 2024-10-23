@@ -14,7 +14,7 @@ pub struct FromTo<T> {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 pub struct Changes {
-    pub create: Vec<Endpoint>,
+    pub create: Option<Vec<Endpoint>>, // Funny enough, when removing records, this field is `null`, instead of `[]` as used in other fields.
     #[serde(flatten, with = "serde_fromto")]
     pub update: Vec<FromTo<Endpoint>>,
     pub delete: Vec<Endpoint>,
@@ -78,11 +78,11 @@ mod tests {
         let json = serde_json::to_string(&Changes {
             update: vec![],
             delete: vec![],
-            create: vec![],
+            create: None,
         });
         assert_eq!(
             json.unwrap(),
-            r##"{"Create":[],"UpdateOld":[],"UpdateNew":[],"Delete":[]}"##
+            r##"{"Create":null,"UpdateOld":[],"UpdateNew":[],"Delete":[]}"##
         );
     }
 }
