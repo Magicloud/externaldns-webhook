@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dnsmasq
+  labels:
+    app: dnsmasq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dnsmasq
+  template:
+    metadata:
+      labels:
+        app: dnsmasq
+    spec:
+      containers:
+      - name: dnsmasq
+        image: magicloud/dnsmasq:1
+        ports:
+        - containerPort: 53
+          protocol: TCP
+        - containerPort: 53
+          protocol: UDP
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/dnsmasq.d/
+          readOnly: true
+      volumes:
+      - name: conf
+        hostPath:
+          path: /tmp/dnsmasq-conf/
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: dnsmasq
+spec:
+  type: LoadBalancer
+  selector:
+    app: dnsmasq
+  ports:
+    - protocol: TCP
+      port: 53
+      targetPort: 53
+      name: dns-tcp
+    - protocol: UDP
+      port: 53
+      targetPort: 53
+      name: dns-udp
