@@ -34,4 +34,9 @@ surrealdb = { version = "*", features = ["kv-surrealkv"] }
 itertools = { version = "*" }
 sha2 = { version = "*" }
 
-[dev-dependencies]
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+opt-level = "z"
+panic = "abort"
