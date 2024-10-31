@@ -15,7 +15,6 @@ use nonempty::NonEmpty;
 use rocket::async_trait;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
-// use std::collections::VecDeque;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{net::IpAddr, path::PathBuf};
@@ -106,15 +105,13 @@ impl Provider for Dnsmasq {
                 .content(EndpointDBItem(i.to))
                 .await?;
         }
-        if let Some(create) = changes.create {
-            log::info!("{} items to create", create.len());
-            for i in create {
-                let _: Option<EndpointDBItem> = self
-                    .extra_db
-                    .create(("endpoint", EndpointDBItem(i.clone())))
-                    .content(EndpointDBItem(i))
-                    .await?;
-            }
+        log::info!("{} items to create", changes.create.len());
+        for i in changes.create {
+            let _: Option<EndpointDBItem> = self
+                .extra_db
+                .create(("endpoint", EndpointDBItem(i.clone())))
+                .content(EndpointDBItem(i))
+                .await?;
         }
 
         let mut lines = vec![];
@@ -352,82 +349,3 @@ impl Display for Record {
         Ok(())
     }
 }
-// impl FromStr for Record {
-//     type Err = RecordParsingError;
-
-//     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-//         let (name, value) = s.split_once('=').ok_or(RecordParsingError::NoMatch)?;
-//         match name {
-//             "address" => {
-//                 let mut values: Vec<_> = value[1..] // drop starting `/`
-//                     .split('/')
-//                     .map(|x| x.to_string())
-//                     .collect();
-//                 let ip = values.pop().ok_or(RecordParsingError::NoMatch)?;
-//                 Ok(Record::Address {
-//                     domains: NonEmpty::from_vec(values).ok_or(RecordParsingError::NoMatch)?,
-//                     ip: IpAddr::from_str(&ip)
-//                         .map_err(|e| RecordParsingError::RegexIpParsingError(e))?,
-//                 })
-//             }
-//             "cname" => {
-//                 let mut values: Vec<_> = value.split(',').map(|x| x.to_string()).collect();
-//                 let last = values.pop().ok_or(RecordParsingError::NoMatch)?;
-//                 let (target, ttl) = if let Ok(ttl) = u32::from_str(&last) {
-//                     let target = values.pop().ok_or(RecordParsingError::NoMatch)?;
-//                     (target, Some(ttl))
-//                 } else {
-//                     (last, None)
-//                 };
-//                 Ok(Record::Cname {
-//                     cnames: NonEmpty::from_vec(values).ok_or(RecordParsingError::NoMatch)?,
-//                     target,
-//                     ttl,
-//                 })
-//             }
-//             "txt-record" => {
-//                 let mut values: VecDeque<_> = value.split(',').map(|x| x.to_string()).collect();
-//                 let name = values.pop_front().ok_or(RecordParsingError::NoMatch)?;
-//                 let texts = values.iter().fold(vec![], |mut init: Vec<String>, item| {
-//                     if let Some(l) = init.last()
-//                         && l.starts_with('"')
-//                     {
-//                         let l = init.pop().unwrap(); // guaranteed by the if
-//                         init.push(format!("{l},{item}"));
-//                     } else {
-//                         init.push((*item).clone());
-//                     }
-//                     init
-//                 });
-//                 let texts = if texts.is_empty() { None } else { Some(texts) };
-//                 Ok(Record::TxtRecord { name, texts })
-//             }
-//             "ptr-record" => {
-//                 let (name, target) = value.split_once(',').ok_or(RecordParsingError::NoMatch)?;
-//                 if name.is_empty() {
-//                     Err(RecordParsingError::NoMatch)?;
-//                 }
-//                 let name = name.to_string();
-//                 let target = if target.is_empty() {
-//                     None
-//                 } else {
-//                     Some(target.to_string())
-//                 };
-//                 Ok(Record::PtrRecord { name, target })
-//             }
-//             &_ => Err(RecordParsingError::NoMatch),
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// enum RecordParsingError {
-//     RegexIpParsingError(std::net::AddrParseError),
-//     NoMatch,
-// }
-// impl Display for RecordParsingError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{self:?}")
-//     }
-// }
-// impl core::error::Error for RecordParsingError {}

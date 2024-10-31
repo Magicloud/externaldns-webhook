@@ -43,7 +43,7 @@ impl Provider for DumbDns {
 
     #[logcall("debug")]
     async fn apply_changes(&self, changes: Changes) -> Result<()> {
-        for i in changes.create.unwrap_or_default() {
+        for i in changes.create {
             self.fqdns.insert(i);
         }
 

@@ -1,9 +1,9 @@
 use crate::endpoint::Endpoint;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::serde_as;
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct FromTo<T> {
     pub from: T,
     pub to: T,
@@ -11,13 +11,24 @@ pub struct FromTo<T> {
 
 // One change at once, or multiple in one POST?
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Changes {
-    pub create: Option<Vec<Endpoint>>, // Funny enough, when removing records, this field is `null`, instead of `[]` as used in other fields.
+    // Funny enough, when removing records, this field is `null`, instead of `[]` as used in other fields.
+    #[serde(deserialize_with = "null_as_empty_vec")]
+    pub create: Vec<Endpoint>,
     #[serde(flatten, with = "serde_fromto")]
     pub update: Vec<FromTo<Endpoint>>,
     pub delete: Vec<Endpoint>,
+}
+
+fn null_as_empty_vec<'de, D, T>(d: D) -> Result<Vec<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    let x = <Option<Vec<T>>>::deserialize(d)?;
+    Ok(x.unwrap_or_default())
 }
 
 mod serde_fromto {
@@ -75,14 +86,13 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let json = serde_json::to_string(&Changes {
+        let changes = Changes {
             update: vec![],
             delete: vec![],
-            create: None,
-        });
-        assert_eq!(
-            json.unwrap(),
-            r##"{"Create":null,"UpdateOld":[],"UpdateNew":[],"Delete":[]}"##
-        );
+            create: vec![],
+        };
+        let json: Result<Changes, _> =
+            serde_json::from_str(r##"{"Create":null,"UpdateOld":[],"UpdateNew":[],"Delete":[]}"##);
+        assert_eq!(json.unwrap(), changes);
     }
 }
