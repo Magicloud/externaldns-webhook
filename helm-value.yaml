@@ -14,7 +14,7 @@ provider:
     imagePullPolicy: Always
     image:
       repository: magicloud/e_d
-      tag: "5"
+      tag: "2024.10.31"
     args:
     - --domain-name
     - example.org
@@ -22,10 +22,6 @@ provider:
     - /etc/dnsmasq.d/external.conf
     - --db-filename
     - /tmp/dnsmasq-db/
-    - --override-host
-    - main.example.org
-    - --override-ip
-    - 11.22.33.44
     env:
     - name: RUST_LOG
       value: debug

@@ -313,7 +313,7 @@ impl Display for Record {
                 for i in domains {
                     f.write_str(&format!("/{i}"))?;
                 }
-                f.write_str(&format!("{ip}"))?;
+                f.write_str(&format!("/{ip}"))?;
             }
             Record::Cname {
                 cnames,

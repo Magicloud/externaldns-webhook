@@ -1,6 +1,6 @@
 [package]
 name = "externaldns-dnsmasq"
-version = "2024.10.31"
+version = "2024.11.1"
 edition = "2021"
 
 [lib]
