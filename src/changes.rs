@@ -1,6 +1,6 @@
 use crate::endpoint::Endpoint;
-use serde::{Deserialize, Deserializer, Serialize};
-use serde_with::serde_as;
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DefaultOnNull};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -15,20 +15,11 @@ pub struct FromTo<T> {
 #[serde(rename_all = "PascalCase")]
 pub struct Changes {
     // Funny enough, when removing records, this field is `null`, instead of `[]` as used in other fields.
-    #[serde(deserialize_with = "null_as_empty_vec")]
+    #[serde_as(deserialize_as = "DefaultOnNull")]
     pub create: Vec<Endpoint>,
     #[serde(flatten, with = "serde_fromto")]
     pub update: Vec<FromTo<Endpoint>>,
     pub delete: Vec<Endpoint>,
-}
-
-fn null_as_empty_vec<'de, D, T>(d: D) -> Result<Vec<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    let x = <Option<Vec<T>>>::deserialize(d)?;
-    Ok(x.unwrap_or_default())
 }
 
 mod serde_fromto {
