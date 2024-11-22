@@ -1148,7 +1148,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "externaldns-dnsmasq"
+name = "externaldns-webhook"
 version = "2024.11.22"
 dependencies = [
  "anyhow",

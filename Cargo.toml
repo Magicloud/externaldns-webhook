@@ -1,7 +1,12 @@
 [package]
-name = "externaldns-dnsmasq"
+name = "externaldns-webhook"
 version = "2024.11.22"
+description = "Interface (trait) for ExternalDns webhook."
 edition = "2021"
+license = "BSD-2-Clause"
+homepage = "https://github.com/Magicloud/externaldns-webhook"
+repository = "https://github.com/Magicloud/externaldns-webhook"
+readme = "README.md"
 
 [lib]
 name = "externaldns_webhook"
