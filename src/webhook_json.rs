@@ -8,8 +8,10 @@ use serde::Serialize;
 use crate::MEDIATYPE;
 
 // ContentType::new("application", "external.dns.webhook+json").with_params(("version", "1"))
-// Have to make this code because external-dns just comparing the string, not parsing to be flexible.
-// And Rocket result has a space after the semicolon, which is allowed in spec.
+
+/// A patch for returned content type.
+/// Because external-dns just comparing the string of content type header, not parsing to be flexible.
+/// And Rocket result has a space after the semicolon, which is allowed in spec.
 
 #[derive(Debug)]
 pub struct WebhookJson<T>(pub Json<T>)
