@@ -1,0 +1,42 @@
+[package]
+name = "externaldns-dnsmasq"
+version = "2024.11.22"
+edition = "2021"
+
+[lib]
+name = "externaldns_webhook"
+path = "src/lib.rs"
+
+[[example]]
+name = "e_d"
+
+[[example]]
+name = "dumb"
+
+[dependencies]
+anyhow = { version = "*" }
+rocket = { version = "*", features = ["json"] }
+tokio = { version = "*", features = ["rt", "fs", "io-util"] }
+serde = { version = "*", features = ["derive"] }
+serde_json = { version = "*" }
+regex = { version = "*" }
+serde_with = { version = "*" }
+either = { version = "*" }
+log = { version = "*" }
+logcall = { version = "*" }
+dashmap = { version = "*", features = ["serde"] }
+
+[dev-dependencies]
+env_logger = { version = "*" }
+clap = { version = "*", features = ["derive"] }
+nonempty = { version = "*" }
+surrealdb = { version = "*", features = ["kv-surrealkv"] }
+itertools = { version = "*" }
+sha2 = { version = "*" }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+opt-level = "z"
+panic = "abort"

@@ -1,2 +1,2 @@
-# externaldns-dnsmasq
-Implenmenting External-DNS webhook interface for Dnsmasq configuration.
+# externaldns
+Implenmenting External-DNS webhook interface.
