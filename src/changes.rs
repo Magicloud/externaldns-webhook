@@ -2,6 +2,7 @@ use crate::endpoint::Endpoint;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnNull};
 
+/// Pair with direction
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct FromTo<T> {
@@ -9,12 +10,16 @@ pub struct FromTo<T> {
     pub to: T,
 }
 
-// One change at once, or multiple in one POST?
+/// Data structure posted from ExternalDNS
+/// The data represent the changes that ExternalDNS wants to make
+/// It is not certain that all fields would be filled in one request.
+/// Could be an Enum.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Changes {
-    // Funny enough, when removing records, this field is `null`, instead of `[]` as used in other fields.
+    // Funny enough, when removing records, this field is `null`,
+    // instead of `[]` as used in other fields.
     #[serde_as(deserialize_as = "DefaultOnNull")]
     pub create: Vec<Endpoint>,
     #[serde(flatten, with = "serde_fromto")]

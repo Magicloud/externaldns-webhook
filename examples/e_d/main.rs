@@ -18,7 +18,7 @@ use sha2::{Digest, Sha512};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{net::IpAddr, path::PathBuf};
-use surrealdb::engine::local::{Db, SurrealKV};
+use surrealdb::engine::local::{Db, SurrealKv};
 use surrealdb::{RecordIdKey, Surreal};
 
 #[tokio::main]
@@ -26,7 +26,7 @@ async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let args = Args::parse();
 
-    let db = Surreal::new::<SurrealKV>(args.db_filename).await?;
+    let db = Surreal::new::<SurrealKv>(args.db_filename).await?;
     db.use_ns("dnsmasq").use_db("dnsmasq").await?;
 
     let provider = Dnsmasq {

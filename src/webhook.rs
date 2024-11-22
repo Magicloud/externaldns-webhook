@@ -18,18 +18,23 @@ use std::sync::Arc;
 
 // TODO: a state trait to answer healthz and metrics
 
+/// Setup of the HTTP server
+/// The listening addresses and ports are specified in ExternalDNS,
+/// hence they are not exposed to be configurable.
 #[derive(Debug)]
 pub struct Webhook {
-    pub provider_address: String,
-    pub provider_port: u16,
-    pub dns_manager: Arc<dyn Provider>,
+    provider_address: String,
+    provider_port: u16,
+    dns_manager: Arc<dyn Provider>,
 
-    pub exposed_address: String,
-    pub exposed_port: u16,
+    exposed_address: String,
+    exposed_port: u16,
 }
 impl Webhook {
+    /// Constructor of `Webhook`.
     #[logcall("debug")]
     pub fn new(dns_manager: Arc<dyn Provider>) -> Webhook {
+        // As much as the http values are customizable, those are the value asked in ExternalDNS doc.
         Webhook {
             provider_address: "127.0.0.1".to_string(),
             provider_port: 8888,
@@ -39,6 +44,7 @@ impl Webhook {
         }
     }
 
+    /// Start the webhook server, and healthz web server.
     #[logcall(ok = "debug", err = "error")]
     pub async fn start(&self) -> anyhow::Result<()> {
         let exposed = rocket::custom(rocket::Config {
