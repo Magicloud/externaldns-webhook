@@ -1,11 +1,11 @@
 use anyhow::Result;
+use async_trait::async_trait;
 use dashmap::DashSet;
 use externaldns_webhook::{
     changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint, provider::Provider,
     webhook::Webhook,
 };
 use logcall::logcall;
-use rocket::async_trait;
 use std::sync::Arc;
 
 #[logcall(ok = "debug", err = "error")]

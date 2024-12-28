@@ -2,6 +2,7 @@
 #![feature(let_chains)]
 
 use anyhow::Result;
+use async_trait::async_trait;
 use clap::Parser;
 use core::fmt::Display;
 use externaldns_webhook::endpoint::RecordType;
@@ -12,7 +13,6 @@ use externaldns_webhook::{
 use itertools::Itertools;
 use logcall::logcall;
 use nonempty::NonEmpty;
-use rocket::async_trait;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::str::FromStr;
