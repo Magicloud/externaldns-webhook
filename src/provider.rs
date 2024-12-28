@@ -1,6 +1,6 @@
 use crate::{changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint};
 use anyhow::Result;
-use rocket::async_trait;
+use async_trait::async_trait;
 use std::fmt::Debug;
 
 /// Definition of the webhook interface.

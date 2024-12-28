@@ -1,4 +1,5 @@
 #![feature(try_blocks)]
+#![feature(let_chains)]
 
 use serde::{Deserialize, Serialize};
 
