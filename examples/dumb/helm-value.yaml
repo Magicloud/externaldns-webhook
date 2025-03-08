@@ -1,12 +1,18 @@
 policy: sync
 
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: monitoring
+
 provider:
   name: webhook
   webhook:
     imagePullPolicy: Always
     image:
       repository: localhost:5000/dumb_ed
-      tag: "a"
+      tag: "b"
     env:
     - name: RUST_LOG
       value: debug
+    serviceMonitor: {}

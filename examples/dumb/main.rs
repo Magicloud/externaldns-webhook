@@ -2,25 +2,30 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashSet;
 use externaldns_webhook::{
-    changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint, provider::Provider,
-    webhook::Webhook,
+    Provider, Status, Webhook, changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint,
 };
 use logcall::logcall;
+use metrics::Gauge;
 use std::sync::Arc;
 
 #[logcall(ok = "debug", err = "error")]
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
-    Webhook::new(Arc::new(DumbDns {
+    let _recorder = metrics_prometheus::install();
+    let g = metrics::gauge!("dns_dumb_total_records", "kind" => "dns_provider");
+    metrics::describe_gauge!("dns_dumb_total_records", "How many records (of all kinds) are held by this DNS provider.");
+    // recorder.register_metric(g.clone());
+
+    let x = Arc::new(DumbDns {
         domain_filter: DomainFilter::Strings {
             include: None,
             exclude: None,
         },
         fqdns: DashSet::new(),
-    }))
-    .start()
-    .await?;
+        gauge_record_count: g,
+    });
+    Webhook::new(x.clone(), x).start().await?;
     Ok(())
 }
 
@@ -28,6 +33,7 @@ async fn main() -> Result<()> {
 struct DumbDns {
     domain_filter: DomainFilter,
     fqdns: DashSet<Endpoint>,
+    gauge_record_count: Gauge,
 }
 #[async_trait]
 impl Provider for DumbDns {
@@ -56,7 +62,10 @@ impl Provider for DumbDns {
             self.fqdns.remove(&i.from);
             self.fqdns.insert(i.to);
         }
+        self.gauge_record_count.set(f64::from(i32::try_from(self.fqdns.len()).unwrap_or(-1)));
 
         Ok(())
     }
 }
+#[async_trait]
+impl Status for DumbDns {}

@@ -1,8 +1,8 @@
 [package]
 name = "externaldns-webhook"
-version = "2024.11.22"
+version = "2025.3.4"
 description = "Interface (trait) for ExternalDns webhook."
-edition = "2021"
+edition = "2024"
 license = "BSD-2-Clause"
 homepage = "https://github.com/Magicloud/externaldns-webhook"
 repository = "https://github.com/Magicloud/externaldns-webhook"
@@ -21,24 +21,27 @@ name = "dumb"
 [dependencies]
 actix-web = { version = "4" }
 anyhow = { version = "1.0" }
-tokio = { version = "1.41", features = ["rt"] }
+tokio = { version = "1.44", features = ["rt"] }
 async-trait = { version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 regex = { version = "1.11" }
 serde_with = { version = "3.12" }
-either = { version = "1.13" }
+either = { version = "1.15" }
 log = { version = "0.4" }
 logcall = { version = "0.1" }
 dashmap = { version = "6.1", features = ["serde"] }
+prometheus = { version="0.13" }
+metrics = { version = "0.24" }
 
 [dev-dependencies]
 env_logger = { version = "0.11" }
 clap = { version = "4.5", features = ["derive"] }
 nonempty = { version = "0.11" }
-surrealdb = { version = "2.1", features = ["kv-surrealkv"] }
-itertools = { version = "0.13" }
+surrealdb = { version = "2.2", features = ["kv-surrealkv"] }
+itertools = { version = "0.14" }
 sha2 = { version = "0.10" }
+metrics-prometheus = { version = "0.9" }
 
 [profile.release]
 strip = true
