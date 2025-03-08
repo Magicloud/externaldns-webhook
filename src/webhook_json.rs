@@ -1,6 +1,6 @@
 use crate::MEDIATYPE;
 use actix_web::{
-    body::EitherBody, error::JsonPayloadError, web::Json, HttpRequest, HttpResponse, Responder,
+    HttpRequest, HttpResponse, Responder, body::EitherBody, error::JsonPayloadError, web::Json,
 };
 use serde::Serialize;
 

@@ -4,11 +4,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
+use prometheus::Gauge;
 use core::fmt::Display;
-use externaldns_webhook::endpoint::RecordType;
-use externaldns_webhook::webhook::Webhook;
 use externaldns_webhook::{
-    changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint, provider::Provider,
+    changes::Changes, domain_filter::DomainFilter, endpoint::{Endpoint, RecordType}, Provider, Status, Webhook
 };
 use itertools::Itertools;
 use logcall::logcall;
@@ -17,26 +16,30 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::str::FromStr;
 use std::sync::Arc;
-use std::{net::IpAddr, path::PathBuf};
-use surrealdb::engine::local::{Db, SurrealKv};
-use surrealdb::{RecordIdKey, Surreal};
+use std::net::IpAddr;
+use std::path::PathBuf;
+use surrealdb::{RecordIdKey, Surreal, engine::local::{Db, SurrealKv}};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
+    let recorder = metrics_prometheus::install();
+    let g = Gauge::new("total_records", "Total number of current holding FQDNs.")?;
+    recorder.register_metric(g.clone());
     let args = Args::parse();
 
     let db = Surreal::new::<SurrealKv>(args.db_filename).await?;
     db.use_ns("dnsmasq").use_db("dnsmasq").await?;
 
-    let provider = Dnsmasq {
+    let provider = Arc::new(Dnsmasq {
         domain_name: args.domain_name,
         conf_filename: args.conf_filename,
         extra_db: db,
         override_a: args.override_ip,
         override_cname: args.override_host,
-    };
-    Webhook::new(Arc::new(provider)).start().await?;
+        gauge_record_count: g,
+    });
+    Webhook::new(provider.clone(), provider).start().await?;
 
     Ok(())
 }
@@ -68,6 +71,7 @@ struct Dnsmasq {
     extra_db: Surreal<Db>,
     override_cname: Option<String>,
     override_a: Option<IpAddr>,
+    gauge_record_count: Gauge,
 }
 #[async_trait]
 impl Provider for Dnsmasq {
@@ -117,7 +121,7 @@ impl Provider for Dnsmasq {
         let mut lines = vec![];
         let endpoints: Vec<EndpointDBItem> = self.extra_db.select("endpoint").await?;
         for (k, endpoints) in endpoints
-            .into_iter()
+            .iter()
             .map(|x| x.0.clone())
             .chunk_by(|x| x.record_type.clone())
             .into_iter()
@@ -260,10 +264,13 @@ impl Provider for Dnsmasq {
             .content(result)
             .await?;
 
+        self.gauge_record_count.set(endpoints.len() as f64);
+
         Ok(())
     }
 }
-
+#[async_trait]
+impl Status for Dnsmasq {}
 #[derive(Serialize, Deserialize)]
 struct EndpointDBItem(Endpoint);
 impl Into<RecordIdKey> for EndpointDBItem {
