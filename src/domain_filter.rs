@@ -2,6 +2,10 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DisplayFromStr};
 
+/// The way to inform ExternalDNS what kind of domains the DNS service provider
+/// could handle.
+/// The domain names used here does not accept the trailing dot.
+/// I did not see it mentioned in ExternalDNS doc, so does not trim here.
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, Debug)]

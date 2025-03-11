@@ -3,6 +3,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use std::hash::Hash;
 
+/// DNS record with extra infor used by ExternalDNS
+/// From sample code, all fields are marked optional. I highly doubt that.
+/// The `PartialEq`, `Eq` and `Hash` are implenmented on DNS record fields
+/// (`dns_name`, `targets`, `record_type`, `record_ttl`).
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -34,6 +38,7 @@ impl Hash for Endpoint {
     }
 }
 
+/// DNS records types
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
 pub enum RecordType {
     A,

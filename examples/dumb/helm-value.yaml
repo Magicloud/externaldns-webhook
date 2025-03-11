@@ -1,0 +1,12 @@
+policy: sync
+
+provider:
+  name: webhook
+  webhook:
+    imagePullPolicy: Always
+    image:
+      repository: localhost:5000/dumb_ed
+      tag: "a"
+    env:
+    - name: RUST_LOG
+      value: debug

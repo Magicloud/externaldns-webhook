@@ -1,35 +1,37 @@
 use crate::{
     changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint, provider::Provider,
-    webhook_json::WebhookJson, IDoNotCareWhich,
+    webhook_json::WebhookJson, IDoNotCareWhich, MEDIATYPE,
 };
-use core::net::IpAddr;
-use core::str::FromStr;
-use logcall::logcall;
-use rocket::{
-    async_trait, get,
-    http::{MediaType, Status},
+use actix_web::{
+    get,
+    guard::GuardContext,
+    http::{header::Accept, StatusCode},
     post,
-    request::{FromRequest, Outcome},
-    routes,
-    serde::json::Json,
-    Request, State,
+    web::{Data, Json},
+    App, HttpServer,
 };
+use logcall::logcall;
 use std::sync::Arc;
 
 // TODO: a state trait to answer healthz and metrics
 
+/// Setup of the HTTP server
+/// The listening addresses and ports are specified in ExternalDNS,
+/// hence they are not exposed to be configurable.
 #[derive(Debug)]
 pub struct Webhook {
-    pub provider_address: String,
-    pub provider_port: u16,
-    pub dns_manager: Arc<dyn Provider>,
+    provider_address: String,
+    provider_port: u16,
+    dns_manager: Arc<dyn Provider>,
 
-    pub exposed_address: String,
-    pub exposed_port: u16,
+    exposed_address: String,
+    exposed_port: u16,
 }
 impl Webhook {
+    /// Constructor of `Webhook`.
     #[logcall("debug")]
     pub fn new(dns_manager: Arc<dyn Provider>) -> Webhook {
+        // As much as the http values are customizable, those are the value asked in ExternalDNS doc.
         Webhook {
             provider_address: "127.0.0.1".to_string(),
             provider_port: 8888,
@@ -39,27 +41,24 @@ impl Webhook {
         }
     }
 
+    /// Start the webhook server, and healthz web server.
     #[logcall(ok = "debug", err = "error")]
     pub async fn start(&self) -> anyhow::Result<()> {
-        let exposed = rocket::custom(rocket::Config {
-            address: IpAddr::from_str(&self.exposed_address)?,
-            port: self.exposed_port,
-            ..rocket::Config::default()
-        })
-        .mount("/", routes![get_healthz]) // get_metrics
-        .launch();
+        let exposed = HttpServer::new(|| App::new().service(get_healthz))
+            .bind((self.exposed_address.clone(), self.exposed_port))?
+            .run();
 
-        let provider = rocket::custom(rocket::Config {
-            address: IpAddr::from_str(&self.provider_address)?,
-            port: self.provider_port,
-            ..rocket::Config::default()
+        let x = self.dns_manager.clone();
+        let provider = HttpServer::new(move || {
+            App::new()
+                .app_data(Data::new(x.clone()))
+                .service(get_root)
+                .service(get_records)
+                .service(post_records)
+                .service(post_adjustendpoints)
         })
-        .manage(self.dns_manager.clone())
-        .mount(
-            "/",
-            routes![get_root, get_records, post_records, post_adjustendpoints,],
-        )
-        .launch();
+        .bind((self.provider_address.clone(), self.provider_port))?
+        .run();
 
         tokio::spawn(exposed);
         provider.await?;
@@ -70,98 +69,55 @@ impl Webhook {
 
 // Negotiate `DomainFilter`
 #[logcall("debug")]
-#[get("/")]
-async fn get_root(
-    dns_manager: &State<Arc<dyn Provider>>,
-    _header_check: GetHeadersCheck,
-) -> WebhookJson<DomainFilter> {
+#[get("/", guard = "media_type_guard")]
+async fn get_root(dns_manager: Data<Arc<dyn Provider>>) -> WebhookJson<DomainFilter> {
     WebhookJson(Json(dns_manager.domain_filter().await))
 }
 
 // Get records
 #[logcall("debug")]
-#[get("/records")]
-async fn get_records(
-    dns_manager: &State<Arc<dyn Provider>>,
-    _header_check: GetHeadersCheck,
-) -> WebhookJson<Vec<Endpoint>> {
+#[get("/records", guard = "media_type_guard")]
+async fn get_records(dns_manager: Data<Arc<dyn Provider>>) -> WebhookJson<Vec<Endpoint>> {
     WebhookJson(Json(dns_manager.records().await))
 }
 
 // Apply record
 #[logcall("debug")]
-#[post(
-    "/records",
-    format = "application/external.dns.webhook+json;version=1",
-    data = "<changes>"
-)]
-// #[suppress(unknown_format)]
+#[post("/records")]
 async fn post_records(
-    dns_manager: &State<Arc<dyn Provider>>,
+    dns_manager: Data<Arc<dyn Provider>>,
     changes: Json<Changes>,
-) -> (Status, String) {
+) -> (String, StatusCode) {
     match dns_manager.apply_changes(changes.0).await {
-        Ok(_) => (Status::Ok, "".to_string()),
-        Err(e) => (Status::InternalServerError, format!("{e:?}")),
+        Ok(_) => ("".to_string(), StatusCode::OK),
+        Err(e) => (format!("{e:?}"), StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
 // Provider specific adjustments of records
 #[logcall("debug")]
-#[post(
-    "/adjustendpoints",
-    format = "application/external.dns.webhook+json;version=1",
-    data = "<endpoints>"
-)]
+#[post("/adjustendpoints", guard = "media_type_guard")]
 async fn post_adjustendpoints(
-    dns_manager: &State<Arc<dyn Provider>>,
+    dns_manager: Data<Arc<dyn Provider>>,
     endpoints: Json<Vec<Endpoint>>,
-    _header_check: GetHeadersCheck,
-) -> (Status, Json<IDoNotCareWhich<Vec<Endpoint>, String>>) {
+) -> (Json<IDoNotCareWhich<Vec<Endpoint>, String>>, StatusCode) {
     match dns_manager.adjust_endpoints(endpoints.0).await {
-        Ok(x) => (Status::Ok, Json(IDoNotCareWhich::One(x))),
+        Ok(x) => (Json(IDoNotCareWhich::One(x)), StatusCode::OK),
         Err(e) => (
-            Status::InternalServerError,
             Json(IDoNotCareWhich::Another(format!("{e:?}"))),
+            StatusCode::INTERNAL_SERVER_ERROR,
         ),
     }
 }
 
-// The interfaces should return what is `Accept`ed. Giving no other formats are needed.
-// Just check external-dns accepts what I can give.
-#[derive(Debug)]
-enum GetHeadersCheckError {
-    NoAcceptHeader,
-    OnlyAcceptMediaVersion1,
-}
-
-#[derive(Debug)]
-struct GetHeadersCheck {}
-#[async_trait]
-impl<'r> FromRequest<'r> for GetHeadersCheck {
-    type Error = GetHeadersCheckError;
-
-    #[logcall("debug")]
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let accepted_media_type = MediaType::new("application", "external.dns.webhook+json")
-            .with_params(("version", "1"));
-        let ret: Result<(), GetHeadersCheckError> = try {
-            request
-                .accept()
-                .ok_or(Self::Error::NoAcceptHeader)?
-                .media_types()
-                .find(|x| **x == accepted_media_type)
-                .ok_or(Self::Error::OnlyAcceptMediaVersion1)?;
-        };
-        match ret {
-            Ok(_) => Outcome::Success(GetHeadersCheck {}),
-            Err(e) => Outcome::Error((Status::BadRequest, e)),
-        }
-    }
+// Only takes and gives `MEDIATYPE`, why guard.
+fn media_type_guard(ctx: &GuardContext<'_>) -> bool {
+    ctx.header::<Accept>()
+        .map_or(false, |h| h.preference() == MEDIATYPE)
 }
 
 // #[logcall("debug")]
 #[get("/healthz")]
-async fn get_healthz() -> (Status, String) {
-    (Status::Ok, "OK".to_string())
+async fn get_healthz() -> (String, StatusCode) {
+    ("OK".to_string(), StatusCode::OK)
 }

@@ -1,7 +1,12 @@
 [package]
-name = "externaldns-dnsmasq"
+name = "externaldns-webhook"
 version = "2024.11.22"
+description = "Interface (trait) for ExternalDns webhook."
 edition = "2021"
+license = "BSD-2-Clause"
+homepage = "https://github.com/Magicloud/externaldns-webhook"
+repository = "https://github.com/Magicloud/externaldns-webhook"
+readme = "README.md"
 
 [lib]
 name = "externaldns_webhook"
@@ -14,25 +19,26 @@ name = "e_d"
 name = "dumb"
 
 [dependencies]
-anyhow = { version = "*" }
-rocket = { version = "*", features = ["json"] }
-tokio = { version = "*", features = ["rt", "fs", "io-util"] }
-serde = { version = "*", features = ["derive"] }
-serde_json = { version = "*" }
-regex = { version = "*" }
-serde_with = { version = "*" }
-either = { version = "*" }
-log = { version = "*" }
-logcall = { version = "*" }
-dashmap = { version = "*", features = ["serde"] }
+actix-web = { version = "4" }
+anyhow = { version = "1.0" }
+tokio = { version = "1.41", features = ["rt"] }
+async-trait = { version = "0.1" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+regex = { version = "1.11" }
+serde_with = { version = "3.12" }
+either = { version = "1.13" }
+log = { version = "0.4" }
+logcall = { version = "0.1" }
+dashmap = { version = "6.1", features = ["serde"] }
 
 [dev-dependencies]
-env_logger = { version = "*" }
-clap = { version = "*", features = ["derive"] }
-nonempty = { version = "*" }
-surrealdb = { version = "*", features = ["kv-surrealkv"] }
-itertools = { version = "*" }
-sha2 = { version = "*" }
+env_logger = { version = "0.11" }
+clap = { version = "4.5", features = ["derive"] }
+nonempty = { version = "0.11" }
+surrealdb = { version = "2.1", features = ["kv-surrealkv"] }
+itertools = { version = "0.13" }
+sha2 = { version = "0.10" }
 
 [profile.release]
 strip = true
