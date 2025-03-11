@@ -5,8 +5,8 @@ provider:
   webhook:
     imagePullPolicy: Always
     image:
-      repository: magicloud/dumb
-      tag: "20241231"
+      repository: localhost:5000/dumb_ed
+      tag: "a"
     env:
     - name: RUST_LOG
       value: debug

@@ -83,7 +83,7 @@ async fn get_records(dns_manager: Data<Arc<dyn Provider>>) -> WebhookJson<Vec<En
 
 // Apply record
 #[logcall("debug")]
-#[post("/records", guard = "media_type_guard")]
+#[post("/records")]
 async fn post_records(
     dns_manager: Data<Arc<dyn Provider>>,
     changes: Json<Changes>,
