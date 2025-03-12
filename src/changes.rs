@@ -1,6 +1,6 @@
 use crate::endpoint::Endpoint;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DefaultOnNull};
+use serde_with::{DefaultOnNull, serde_as};
 
 /// Pair with direction
 #[serde_as]

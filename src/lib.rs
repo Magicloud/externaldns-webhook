@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 pub mod changes;
 pub mod domain_filter;
 pub mod endpoint;
-pub mod provider;
-pub mod webhook;
+mod provider;
+mod status;
+mod webhook;
 mod webhook_json;
 
 /// Container of either of the two items.
@@ -23,4 +24,5 @@ enum IDoNotCareWhich<A, B> {
 const MEDIATYPE: &str = "application/external.dns.webhook+json;version=1";
 
 pub use provider::Provider;
+pub use status::Status;
 pub use webhook::Webhook;

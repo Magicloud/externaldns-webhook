@@ -1,19 +1,16 @@
 use crate::{
-    changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint, provider::Provider,
-    webhook_json::WebhookJson, IDoNotCareWhich, MEDIATYPE,
+    IDoNotCareWhich, MEDIATYPE, changes::Changes, domain_filter::DomainFilter, endpoint::Endpoint,
+    provider::Provider, status::Status, webhook_json::WebhookJson,
 };
 use actix_web::{
-    get,
+    App, HttpServer, get,
     guard::GuardContext,
-    http::{header::Accept, StatusCode},
+    http::{StatusCode, header::Accept},
     post,
     web::{Data, Json},
-    App, HttpServer,
 };
 use logcall::logcall;
 use std::sync::Arc;
-
-// TODO: a state trait to answer healthz and metrics
 
 /// Setup of the HTTP server
 /// The listening addresses and ports are specified in ExternalDNS,
@@ -26,11 +23,12 @@ pub struct Webhook {
 
     exposed_address: String,
     exposed_port: u16,
+    status: Arc<dyn Status>,
 }
 impl Webhook {
     /// Constructor of `Webhook`.
     #[logcall("debug")]
-    pub fn new(dns_manager: Arc<dyn Provider>) -> Webhook {
+    pub fn new(dns_manager: Arc<dyn Provider>, status: Arc<dyn Status>) -> Webhook {
         // As much as the http values are customizable, those are the value asked in ExternalDNS doc.
         Webhook {
             provider_address: "127.0.0.1".to_string(),
@@ -38,15 +36,22 @@ impl Webhook {
             dns_manager,
             exposed_address: "0.0.0.0".to_string(),
             exposed_port: 8080,
+            status,
         }
     }
 
     /// Start the webhook server, and healthz web server.
     #[logcall(ok = "debug", err = "error")]
     pub async fn start(&self) -> anyhow::Result<()> {
-        let exposed = HttpServer::new(|| App::new().service(get_healthz))
-            .bind((self.exposed_address.clone(), self.exposed_port))?
-            .run();
+        let x = self.status.clone();
+        let exposed = HttpServer::new(move || {
+            App::new()
+                .app_data(Data::new(x.clone()))
+                .service(get_healthz)
+                .service(get_metrics)
+        })
+        .bind((self.exposed_address.clone(), self.exposed_port))?
+        .run();
 
         let x = self.dns_manager.clone();
         let provider = HttpServer::new(move || {
@@ -118,6 +123,12 @@ fn media_type_guard(ctx: &GuardContext<'_>) -> bool {
 
 // #[logcall("debug")]
 #[get("/healthz")]
-async fn get_healthz() -> (String, StatusCode) {
-    ("OK".to_string(), StatusCode::OK)
+async fn get_healthz(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
+    status.healthz().await
+}
+
+// #[logcall("debug")]
+#[get("/metrics")]
+async fn get_metrics(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
+    status.metrics().await
 }
