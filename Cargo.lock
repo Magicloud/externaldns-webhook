@@ -1378,7 +1378,7 @@ dependencies = [
 
 [[package]]
 name = "externaldns-webhook"
-version = "2025.3.4"
+version = "2025.3.15"
 dependencies = [
  "actix-web",
  "anyhow",

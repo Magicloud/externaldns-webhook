@@ -1,7 +1,7 @@
 [package]
 name = "externaldns-webhook"
-version = "2025.3.4"
-description = "Interface (trait) for ExternalDns webhook."
+version = "2025.3.15"
+description = "Interface (trait) for ExternalDns(v0.15.0) webhook."
 edition = "2024"
 license = "BSD-2-Clause"
 homepage = "https://github.com/Magicloud/externaldns-webhook"
