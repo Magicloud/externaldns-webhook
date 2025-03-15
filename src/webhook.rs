@@ -6,6 +6,7 @@ use actix_web::{
     App, HttpServer, get,
     guard::GuardContext,
     http::{StatusCode, header::Accept},
+    middleware::Logger,
     post,
     web::{Data, Json},
 };
@@ -46,6 +47,7 @@ impl Webhook {
         let x = self.status.clone();
         let exposed = HttpServer::new(move || {
             App::new()
+                .wrap(Logger::default())
                 .app_data(Data::new(x.clone()))
                 .service(get_healthz)
                 .service(get_metrics)
@@ -56,6 +58,7 @@ impl Webhook {
         let x = self.dns_manager.clone();
         let provider = HttpServer::new(move || {
             App::new()
+                .wrap(Logger::default())
                 .app_data(Data::new(x.clone()))
                 .service(get_root)
                 .service(get_records)
