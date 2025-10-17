@@ -9,9 +9,9 @@ use std::fmt::Debug;
 #[async_trait]
 pub trait Provider: Send + Sync + Debug {
     /// Return the domains the provider could handle.
-    async fn domain_filter(&self) -> DomainFilter;
+    async fn domain_filter(&self) -> Result<DomainFilter>;
     /// Return existing (previously registered by ExternalDNS) DNS records.
-    async fn records(&self) -> Vec<Endpoint>;
+    async fn records(&self) -> Result<Vec<Endpoint>>;
     /// Make records changes asked by ExternalDNS.
     async fn apply_changes(&self, changes: Changes) -> Result<()>;
     /// Confirmation by providers, if any records should be adjusted, before making changes.
