@@ -1,6 +1,6 @@
 [package]
 name = "externaldns-webhook"
-version = "2025.3.15"
+version = "2025.10.17"
 description = "Interface (trait) for ExternalDns(v0.15.0) webhook."
 edition = "2024"
 license = "BSD-2-Clause"
@@ -21,7 +21,7 @@ name = "dumb"
 [dependencies]
 actix-web = { version = "4" }
 anyhow = { version = "1.0" }
-tokio = { version = "1.44", features = ["rt"] }
+tokio = { version = "1.48", features = ["rt"] }
 async-trait = { version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
@@ -31,7 +31,7 @@ either = { version = "1.15" }
 log = { version = "0.4" }
 logcall = { version = "0.1" }
 dashmap = { version = "6.1", features = ["serde"] }
-prometheus = { version="0.13" }
+prometheus = { version = "0.14" }
 metrics = { version = "0.24" }
 
 [dev-dependencies]
