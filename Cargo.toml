@@ -35,13 +35,13 @@ prometheus = { version = "0.14" }
 metrics = { version = "0.24" }
 
 [dev-dependencies]
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "fs"] }
 env_logger = { version = "0.11" }
 clap = { version = "4.5", features = ["derive"] }
-nonempty = { version = "0.11" }
-surrealdb = { version = "2.2", features = ["kv-surrealkv"] }
+nonempty = { version = "0.12" }
 itertools = { version = "0.14" }
 sha2 = { version = "0.10" }
-metrics-prometheus = { version = "0.9" }
+metrics-prometheus = { version = "0.11" }
 
 [profile.release]
 strip = true

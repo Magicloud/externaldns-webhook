@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: dnsmasq
-        image: magicloud/dnsmasq:1
+        image: localhost:5000/dnsmasq:e_d
+        imagePullPolicy: Always
         ports:
         - containerPort: 53
           protocol: TCP
@@ -29,7 +30,7 @@ spec:
       volumes:
       - name: conf
         hostPath:
-          path: /tmp/dnsmasq-conf/
+          path: /mnt/data/conf/dnsmasq/
 
 ---
 

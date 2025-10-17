@@ -4,7 +4,7 @@ set -eux -o pipefail
 
 while true;
 do
-    dnsmasq "$@"
+    dnsmasq &
     inotifywait -r -e modify -e create /etc/dnsmasq.d/ &&
     killall dnsmasq
 done

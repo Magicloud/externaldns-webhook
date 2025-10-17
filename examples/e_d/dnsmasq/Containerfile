@@ -1,11 +1,10 @@
 FROM alpine:latest
 
-VOLUME [ "/etc/dnsmasq.d/" ]
-
 RUN apk add --no-cache dnsmasq inotify-tools
-COPY dnsmasq.conf /etc/dnsmassq.conf
+COPY dnsmasq.conf /etc/dnsmasq.conf
 COPY reload.sh /reload.sh
 
+VOLUME [ "/etc/dnsmasq.d/" ]
 EXPOSE 53/TCP
 EXPOSE 53/UDP
 

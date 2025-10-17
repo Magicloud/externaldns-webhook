@@ -3,30 +3,23 @@ policy: sync
 extraVolumes:
 - name: conf
   hostPath:
-    path: /tmp/dnsmasq-conf/
-- name: db
-  hostPath:
-    path: /tmp/dnsmasq-db/
+    path: /mnt/data/conf/dnsmasq/
 
 provider:
   name: webhook
   webhook:
     imagePullPolicy: Always
     image:
-      repository: magicloud/e_d
-      tag: "2024.10.31"
+      repository: localhost:5000/e_d
+      tag: "latest"
     args:
     - --domain-name
-    - example.org
+    - magicloud.lan
     - --conf-filename
     - /etc/dnsmasq.d/external.conf
-    - --db-filename
-    - /tmp/dnsmasq-db/
     env:
     - name: RUST_LOG
       value: debug
     extraVolumeMounts:
     - name: conf
       mountPath: /etc/dnsmasq.d/
-    - name: db
-      mountPath: /tmp/dnsmasq-db/
