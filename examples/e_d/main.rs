@@ -59,42 +59,37 @@ struct Dnsmasq {
 #[async_trait]
 impl Provider for Dnsmasq {
     #[logcall("info")]
-    async fn domain_filter(&self) -> DomainFilter {
-        DomainFilter::Strings {
+    async fn domain_filter(&self) -> Result<DomainFilter> {
+        Ok(DomainFilter::Strings {
             include: Some(vec![self.domain_name.clone()]),
             exclude: None,
-        }
+        })
     }
 
     #[logcall("info")]
-    async fn records(&self) -> Vec<Endpoint> {
-        let x: Result<Vec<Endpoint>> = try {
-            let file = fs::OpenOptions::new()
-                .read(true)
-                .open(&self.conf_filename)
-                .await?;
-            let mut conf = BufReader::new(file).lines();
-            let mut buf = Vec::new();
-            let mut result = Vec::new();
-            while let Some(l) = conf.next_line().await? {
-                if l.is_empty() {
-                    result.push(EndpointED::from_str(&buf.join("\n"))?.0);
-                    buf = vec![];
-                } else {
-                    buf.push(l);
-                }
+    async fn records(&self) -> Result<Vec<Endpoint>> {
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .open(&self.conf_filename)
+            .await?;
+        let mut conf = BufReader::new(file).lines();
+        let mut buf = Vec::new();
+        let mut result = Vec::new();
+        while let Some(l) = conf.next_line().await? {
+            if l.is_empty() {
+                result.push(EndpointED::from_str(&buf.join("\n"))?.0);
+                buf = vec![];
+            } else {
+                buf.push(l);
             }
-            result
-        };
-        if let Err(ref e) = x {
-            log::error!("{e:?}");
-        };
-        x.unwrap_or_default()
+        }
+        result.push(EndpointED::from_str(&buf.join("\n"))?.0);
+        Ok(result)
     }
 
     #[logcall("info")]
     async fn apply_changes(&self, changes: Changes) -> Result<()> {
-        let endpoints: DashSet<Endpoint> = DashSet::from_iter(self.records().await.into_iter());
+        let endpoints: DashSet<Endpoint> = DashSet::from_iter(self.records().await?.into_iter());
         for i in changes.create {
             endpoints.insert(i);
         }
@@ -123,11 +118,11 @@ impl Provider for Dnsmasq {
 
 #[async_trait]
 impl Status for Dnsmasq {}
+
 // address=/domain[/domain]/ip
 // cname=cname[,cname],target[,ttl]
 // txt-record=name[,"text"]*
 // ptr-record=name[,target]
-
 struct EndpointED(Endpoint);
 impl Display for EndpointED {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
