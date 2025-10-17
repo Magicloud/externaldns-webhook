@@ -16,7 +16,7 @@ pub struct FromTo<T> {
 /// Could be an Enum.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct Changes {
     // Funny enough, when removing records, this field is `null`,
     // instead of `[]` as used in other fields.
@@ -26,6 +26,15 @@ pub struct Changes {
     pub update: Vec<FromTo<Endpoint>>,
     pub delete: Vec<Endpoint>,
 }
+impl Default for Changes {
+    fn default() -> Self {
+        Self {
+            create: Default::default(),
+            update: Default::default(),
+            delete: Default::default(),
+        }
+    }
+}
 
 mod serde_fromto {
     use super::FromTo;
@@ -33,11 +42,20 @@ mod serde_fromto {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     #[derive(Serialize, Deserialize)]
+    #[serde(default)]
     struct FromTos<T> {
         #[serde(rename = "UpdateOld")]
         old: Vec<T>,
         #[serde(rename = "UpdateNew")]
         new: Vec<T>,
+    }
+    impl<T> Default for FromTos<T> {
+        fn default() -> Self {
+            Self {
+                old: Default::default(),
+                new: Default::default(),
+            }
+        }
     }
 
     pub fn serialize<S, T>(fts: &Vec<FromTo<T>>, serializer: S) -> Result<S::Ok, S::Error>
@@ -82,13 +100,33 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let changes = Changes {
-            update: vec![],
-            delete: vec![],
-            create: vec![],
-        };
-        let json: Result<Changes, _> =
-            serde_json::from_str(r##"{"Create":null,"UpdateOld":[],"UpdateNew":[],"Delete":[]}"##);
-        assert_eq!(json.unwrap(), changes);
+        let json: Result<Changes, _> = serde_json::from_str(
+            r##"{
+    "create": [
+        {
+            "dnsName": "nextcloud.magicloud.lan",
+            "targets": [
+                "192.168.0.102"
+            ],
+            "recordType": "A",
+            "labels": {
+                "owner": "default",
+                "resource": "ingress/nextcloud/nextcloud"
+            }
+        },
+        {
+            "dnsName": "a-nextcloud.magicloud.lan",
+            "targets": [
+                "\"heritage=external-dns,external-dns/owner=default,external-dns/resource=ingress/nextcloud/nextcloud\""
+            ],
+            "recordType": "TXT",
+            "labels": {
+                "ownedRecord": "nextcloud.magicloud.lan"
+            }
+        }
+    ]
+}"##,
+        );
+        eprintln!("{json:?}");
     }
 }

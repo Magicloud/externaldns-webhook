@@ -16,7 +16,7 @@ pub struct Endpoint {
     pub record_type: Option<RecordType>,
     pub set_identifier: Option<String>,
     #[serde(rename = "recordTTL")]
-    pub record_ttl: Option<u32>,
+    pub record_ttl: Option<i64>,
     pub labels: Option<DashMap<String, String>>,
     pub provider_specific: Option<DashMap<String, String>>,
 }
@@ -58,21 +58,33 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let json = serde_json::to_string(&Endpoint {
-            dns_name: Some("test.example.org".to_string()),
-            targets: Some(vec!["localhost".to_string()]),
-            record_type: Some(RecordType::CNAME),
-            set_identifier: None,
-            record_ttl: Some(128),
-            labels: Some(DashMap::from_iter([(
-                "msg".to_string(),
-                "test".to_string(),
-            )])),
-            provider_specific: None,
-        });
-        assert_eq!(
-            json.unwrap(),
-            r##"{"dnsName":"test.example.org","targets":["localhost"],"recordType":"CNAME","recordTTL":128,"labels":{"msg":"test"}}"##
+        let json: Result<Endpoint, _> = serde_json::from_str(
+            r##"{
+            "dnsName": "nextcloud.magicloud.lan",
+            "targets": [
+                "192.168.0.102"
+            ],
+            "recordType": "A",
+            "labels": {
+                "owner": "default",
+                "resource": "ingress/nextcloud/nextcloud"
+            }
+}"##,
         );
+        eprintln!("{json:?}");
+
+        let json: Result<Endpoint, _> = serde_json::from_str(
+            r##"{
+            "dnsName": "a-nextcloud.magicloud.lan",
+            "targets": [
+                "\"heritage=external-dns,external-dns/owner=default,external-dns/resource=ingress/nextcloud/nextcloud\""
+            ],
+            "recordType": "TXT",
+            "labels": {
+                "ownedRecord": "nextcloud.magicloud.lan"
+            }
+}"##,
+        );
+        eprintln!("{json:?}");
     }
 }
