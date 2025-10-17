@@ -77,7 +77,9 @@ impl Provider for Dnsmasq {
         let mut result = Vec::new();
         while let Some(l) = conf.next_line().await? {
             if l.is_empty() {
-                result.push(EndpointED::from_str(&buf.join("\n"))?.0);
+                if !buf.is_empty() {
+                    result.push(EndpointED::from_str(&buf.join("\n"))?.0);
+                }
                 buf = vec![];
             } else {
                 buf.push(l);
@@ -186,7 +188,9 @@ impl FromStr for EndpointED {
         let first_line = lines
             .next()
             .and_then(|l| l.strip_prefix("# "))
-            .ok_or(anyhow!("Input does not contain a commented first line"))?;
+            .ok_or(anyhow!(
+                "Input does not contain a commented first line: {s}"
+            ))?;
         let endpoint = serde_json::from_str(first_line)?;
         Ok(EndpointED(endpoint))
     }
