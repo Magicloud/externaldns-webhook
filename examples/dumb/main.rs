@@ -14,7 +14,10 @@ async fn main() -> Result<()> {
     env_logger::init();
     let _recorder = metrics_prometheus::install();
     let g = metrics::gauge!("dns_dumb_total_records", "kind" => "dns_provider");
-    metrics::describe_gauge!("dns_dumb_total_records", "How many records (of all kinds) are held by this DNS provider.");
+    metrics::describe_gauge!(
+        "dns_dumb_total_records",
+        "How many records (of all kinds) are held by this DNS provider."
+    );
     // recorder.register_metric(g.clone());
 
     let x = Arc::new(DumbDns {
@@ -38,13 +41,13 @@ struct DumbDns {
 #[async_trait]
 impl Provider for DumbDns {
     #[logcall("debug")]
-    async fn domain_filter(&self) -> DomainFilter {
-        self.domain_filter.clone()
+    async fn domain_filter(&self) -> Result<DomainFilter> {
+        Ok(self.domain_filter.clone())
     }
 
     #[logcall("debug")]
-    async fn records(&self) -> Vec<Endpoint> {
-        self.fqdns.iter().map(|x| x.clone()).collect()
+    async fn records(&self) -> Result<Vec<Endpoint>> {
+        Ok(self.fqdns.iter().map(|x| x.clone()).collect())
     }
 
     #[logcall("debug")]
@@ -62,7 +65,8 @@ impl Provider for DumbDns {
             self.fqdns.remove(&i.from);
             self.fqdns.insert(i.to);
         }
-        self.gauge_record_count.set(f64::from(i32::try_from(self.fqdns.len()).unwrap_or(-1)));
+        self.gauge_record_count
+            .set(f64::from(i32::try_from(self.fqdns.len()).unwrap_or(-1)));
 
         Ok(())
     }

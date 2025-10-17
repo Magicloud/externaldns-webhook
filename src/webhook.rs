@@ -3,7 +3,7 @@ use crate::{
     webhook_json::WebhookJson,
 };
 use actix_web::{
-    App, HttpServer, get,
+    App, HttpServer, ResponseError, get,
     guard::GuardContext,
     http::{StatusCode, header::Accept},
     middleware::Logger,
@@ -12,7 +12,7 @@ use actix_web::{
 };
 use logcall::logcall;
 use serde_json::{Value, from_value};
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 
 /// Setup of the HTTP server
 /// The listening addresses and ports are specified in ExternalDNS,
@@ -81,16 +81,28 @@ impl Webhook {
 // Returns 200/500
 #[logcall("debug")]
 #[get("/", guard = "media_type_guard")]
-async fn get_root(dns_manager: Data<Arc<dyn Provider>>) -> WebhookJson<DomainFilter> {
-    WebhookJson(Json(dns_manager.domain_filter().await))
+async fn get_root(
+    dns_manager: Data<Arc<dyn Provider>>,
+) -> Result<WebhookJson<DomainFilter>, ErrorWraper> {
+    dns_manager
+        .domain_filter()
+        .await
+        .map(|x| WebhookJson(Json(x)))
+        .map_err(|e| ErrorWraper(e))
 }
 
 // Returns the current records.
 // Returns 200/500
 #[logcall("debug")]
 #[get("/records", guard = "media_type_guard")]
-async fn get_records(dns_manager: Data<Arc<dyn Provider>>) -> WebhookJson<Vec<Endpoint>> {
-    WebhookJson(Json(dns_manager.records().await))
+async fn get_records(
+    dns_manager: Data<Arc<dyn Provider>>,
+) -> Result<WebhookJson<Vec<Endpoint>>, ErrorWraper> {
+    dns_manager
+        .records()
+        .await
+        .map(|x| WebhookJson(Json(x)))
+        .map_err(|e| ErrorWraper(e))
 }
 
 // Applies the changes.
@@ -100,19 +112,17 @@ async fn get_records(dns_manager: Data<Arc<dyn Provider>>) -> WebhookJson<Vec<En
 async fn post_records(
     dns_manager: Data<Arc<dyn Provider>>,
     changes: Json<Value>,
-) -> (String, StatusCode) {
+) -> Result<(), ErrorWraper> {
     let json = changes.into_inner();
-    if let Ok(changes) = from_value(json.clone()) {
-        match dns_manager.apply_changes(changes).await {
-            Ok(_) => (String::new(), StatusCode::NO_CONTENT),
-            Err(e) => {
-                log::warn!("{e:?}");
-                (String::new(), StatusCode::INTERNAL_SERVER_ERROR)
-            }
+    match from_value(json.clone()) {
+        Ok(changes) => dns_manager
+            .apply_changes(changes)
+            .await
+            .map_err(|e| ErrorWraper(e)),
+        Err(e) => {
+            log::warn!("{json}");
+            Err(ErrorWraper(e.into()))
         }
-    } else {
-        log::warn!("{json}");
-        (String::new(), StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
 
@@ -123,19 +133,18 @@ async fn post_records(
 async fn post_adjustendpoints(
     dns_manager: Data<Arc<dyn Provider>>,
     endpoints: Json<Value>,
-) -> (Json<Vec<Endpoint>>, StatusCode) {
+) -> Result<Json<Vec<Endpoint>>, ErrorWraper> {
     let json = endpoints.into_inner();
-    if let Ok(endpoints) = from_value(json.clone()) {
-        match dns_manager.adjust_endpoints(endpoints).await {
-            Ok(x) => (Json(x), StatusCode::OK),
-            Err(e) => {
-                log::warn!("{e:?}");
-                (Json(vec![]), StatusCode::INTERNAL_SERVER_ERROR)
-            }
+    match from_value(json.clone()) {
+        Ok(endpoints) => dns_manager
+            .adjust_endpoints(endpoints)
+            .await
+            .map(|x| Json(x))
+            .map_err(|e| ErrorWraper(e)),
+        Err(e) => {
+            log::warn!("{json}");
+            Err(ErrorWraper(e.into()))
         }
-    } else {
-        log::warn!("{json}");
-        (Json(vec![]), StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
 
@@ -156,3 +165,12 @@ async fn get_healthz(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
 async fn get_metrics(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
     status.metrics().await
 }
+
+#[derive(Debug)]
+struct ErrorWraper(anyhow::Error);
+impl Display for ErrorWraper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
+impl ResponseError for ErrorWraper {}

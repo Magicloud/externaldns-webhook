@@ -662,7 +662,7 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "externaldns-webhook"
-version = "2025.10.17"
+version = "2025.10.18"
 dependencies = [
  "actix-web",
  "anyhow",

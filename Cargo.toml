@@ -1,6 +1,6 @@
 [package]
 name = "externaldns-webhook"
-version = "2025.10.17"
+version = "2025.10.18"
 description = "Interface (trait) for ExternalDns(v0.15.0) webhook."
 edition = "2024"
 license = "BSD-2-Clause"
