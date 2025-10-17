@@ -13,7 +13,6 @@ use externaldns_webhook::{
 };
 use logcall::logcall;
 use prometheus::Gauge;
-use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -33,8 +32,6 @@ async fn main() -> anyhow::Result<()> {
     let provider = Arc::new(Dnsmasq {
         domain_name: args.domain_name,
         conf_filename: args.conf_filename,
-        override_a: args.override_ip,
-        override_cname: args.override_host,
         gauge_record_count: g,
     });
     Webhook::new(provider.clone(), provider).start().await?;
@@ -51,20 +48,12 @@ struct Args {
     /// Dnsmasq configuration file path
     #[arg(long)]
     conf_filename: PathBuf,
-    /// Override the host target of External DNS CNAME request
-    #[arg(long)]
-    override_host: Option<String>,
-    /// Override the IP target of External DNS A/AAAA request
-    #[arg(long)]
-    override_ip: Option<IpAddr>,
 }
 
 #[derive(Debug)]
 struct Dnsmasq {
     domain_name: String,
     conf_filename: PathBuf,
-    override_cname: Option<String>,
-    override_a: Option<IpAddr>,
     gauge_record_count: Gauge,
 }
 #[async_trait]
