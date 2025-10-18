@@ -15,9 +15,6 @@ path = "src/lib.rs"
 [[example]]
 name = "e_d"
 
-[[example]]
-name = "dumb"
-
 [dependencies]
 actix-web = { version = "4" }
 anyhow = { version = "1.0" }
