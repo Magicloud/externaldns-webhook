@@ -15,7 +15,7 @@ use serde_json::{Value, from_value};
 use std::{fmt::Display, sync::Arc};
 
 /// Setup of the HTTP server
-/// The listening addresses and ports are specified in ExternalDNS,
+/// The listening addresses and ports are specified in External-DNS,
 /// hence they are not exposed to be configurable.
 #[derive(Debug)]
 pub struct Webhook {
@@ -30,9 +30,9 @@ pub struct Webhook {
 impl Webhook {
     /// Constructor of `Webhook`.
     #[logcall("debug")]
-    pub fn new(dns_manager: Arc<dyn Provider>, status: Arc<dyn Status>) -> Webhook {
+    pub fn new(dns_manager: Arc<dyn Provider>, status: Arc<dyn Status>) -> Self {
         // As much as the http values are customizable, those are the value asked in ExternalDNS doc.
-        Webhook {
+        Self {
             provider_address: "127.0.0.1".to_string(),
             provider_port: 8888,
             dns_manager,
@@ -43,8 +43,11 @@ impl Webhook {
     }
 
     /// Start the webhook server, and healthz web server.
+    /// # Errors
+    ///
+    /// any errors that could happen
     #[logcall(ok = "debug", err = "error")]
-    pub async fn start(&self) -> anyhow::Result<()> {
+    pub async fn start(&self) -> eyre::Result<()> {
         let x = self.status.clone();
         let exposed = HttpServer::new(move || {
             App::new()
@@ -88,7 +91,7 @@ async fn get_root(
         .domain_filter()
         .await
         .map(|x| WebhookJson(Json(x)))
-        .map_err(|e| ErrorWraper(e))
+        .map_err(ErrorWraper)
 }
 
 // Returns the current records.
@@ -102,7 +105,7 @@ async fn get_records(
         .records()
         .await
         .map(|x| WebhookJson(Json(x)))
-        .map_err(|e| ErrorWraper(e))
+        .map_err(ErrorWraper)
 }
 
 // Applies the changes.
@@ -118,7 +121,7 @@ async fn post_records(
         Ok(changes) => dns_manager
             .apply_changes(changes)
             .await
-            .map_err(|e| ErrorWraper(e)),
+            .map_err(ErrorWraper),
         Err(e) => {
             log::warn!("{json}");
             Err(ErrorWraper(e.into()))
@@ -139,8 +142,8 @@ async fn post_adjustendpoints(
         Ok(endpoints) => dns_manager
             .adjust_endpoints(endpoints)
             .await
-            .map(|x| Json(x))
-            .map_err(|e| ErrorWraper(e)),
+            .map(Json)
+            .map_err(ErrorWraper),
         Err(e) => {
             log::warn!("{json}");
             Err(ErrorWraper(e.into()))
@@ -151,7 +154,7 @@ async fn post_adjustendpoints(
 // Only takes and gives `MEDIATYPE`, why guard.
 fn media_type_guard(ctx: &GuardContext<'_>) -> bool {
     ctx.header::<Accept>()
-        .map_or(false, |h| h.preference() == MEDIATYPE)
+        .is_some_and(|h| h.preference() == MEDIATYPE)
 }
 
 // #[logcall("debug")]
@@ -167,7 +170,7 @@ async fn get_metrics(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
 }
 
 #[derive(Debug)]
-struct ErrorWraper(anyhow::Error);
+struct ErrorWraper(eyre::Error);
 impl Display for ErrorWraper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))

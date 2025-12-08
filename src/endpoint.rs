@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use std::hash::Hash;
 
-/// DNS record with extra infor used by ExternalDNS
+/// DNS record with extra infor used by External-DNS
 /// From sample code, all fields are marked optional. I highly doubt that.
 /// The `PartialEq`, `Eq` and `Hash` are implenmented on DNS record fields
 /// (`dns_name`, `targets`, `record_type`, `record_ttl`).
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn it_works() {
         let json: Result<Endpoint, _> = serde_json::from_str(
-            r##"{
+            r#"{
             "dnsName": "nextcloud.magicloud.lan",
             "targets": [
                 "192.168.0.102"
@@ -69,12 +69,12 @@ mod tests {
                 "owner": "default",
                 "resource": "ingress/nextcloud/nextcloud"
             }
-}"##,
+}"#,
         );
         eprintln!("{json:?}");
 
         let json: Result<Endpoint, _> = serde_json::from_str(
-            r##"{
+            r#"{
             "dnsName": "a-nextcloud.magicloud.lan",
             "targets": [
                 "\"heritage=external-dns,external-dns/owner=default,external-dns/resource=ingress/nextcloud/nextcloud\""
@@ -83,7 +83,7 @@ mod tests {
             "labels": {
                 "ownedRecord": "nextcloud.magicloud.lan"
             }
-}"##,
+}"#,
         );
         eprintln!("{json:?}");
     }

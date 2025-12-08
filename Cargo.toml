@@ -1,12 +1,13 @@
 [package]
 name = "externaldns-webhook"
-version = "2025.10.18"
+version = "2025.12.8"
 description = "Interface (trait) for ExternalDns(v0.15.0) webhook."
 edition = "2024"
 license = "BSD-2-Clause"
-homepage = "https://github.com/Magicloud/externaldns-webhook"
 repository = "https://github.com/Magicloud/externaldns-webhook"
 readme = "README.md"
+keywords = ["kubernetes", "external-dns"]
+categories = ["api-bindings"]
 
 [lib]
 name = "externaldns_webhook"
@@ -17,7 +18,7 @@ name = "e_d"
 
 [dependencies]
 actix-web = { version = "4" }
-anyhow = { version = "1.0" }
+eyre = { version = "0.6" }
 tokio = { version = "1.48", features = ["rt"] }
 async-trait = { version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
@@ -40,5 +41,5 @@ metrics = { version = "0.24" }
 strip = true
 lto = true
 codegen-units = 1
-opt-level = "z"
+opt-level = 3
 panic = "abort"

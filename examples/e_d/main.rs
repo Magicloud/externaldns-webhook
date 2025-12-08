@@ -1,6 +1,16 @@
-#![feature(try_blocks)]
+#![warn(clippy::cargo)]
+#![warn(clippy::complexity)]
+#![warn(clippy::correctness)]
+#![warn(clippy::nursery)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::perf)]
+#![warn(clippy::style)]
+#![warn(clippy::suspicious)]
+#![allow(clippy::future_not_send)]
+#![allow(clippy::multiple_crate_versions)]
+#![allow(clippy::wildcard_dependencies)]
 
-use anyhow::{Result, anyhow};
+use eyre::{Result, eyre};
 use async_trait::async_trait;
 use clap::Parser;
 use core::fmt::Display;
@@ -22,7 +32,7 @@ use tokio::{
 };
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> eyre::Result<()> {
     env_logger::init();
     let recorder = metrics_prometheus::install();
     let g = Gauge::new("total_records", "Total number of current holding FQDNs.")?;
@@ -93,7 +103,8 @@ impl Provider for Dnsmasq {
 
     #[logcall("info")]
     async fn apply_changes(&self, changes: Changes) -> Result<()> {
-        let endpoints: DashSet<Endpoint> = DashSet::from_iter(self.records().await?.into_iter());
+        let endpoints: DashSet<Endpoint> =
+            self.records().await?.into_iter().collect::<DashSet<_>>();
         for i in changes.create {
             endpoints.insert(i);
         }
@@ -105,7 +116,8 @@ impl Provider for Dnsmasq {
             endpoints.insert(i.to);
         }
 
-        self.gauge_record_count.set(endpoints.len() as f64);
+        self.gauge_record_count
+            .set(f64::from(u32::try_from(endpoints.len())?));
 
         fs::write(
             &self.conf_filename,
@@ -131,9 +143,9 @@ struct EndpointED(Endpoint);
 impl Display for EndpointED {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let endpoint = self.0.clone();
-        let y: anyhow::Result<()> = try {
+        let mut try_block = || {
             if endpoint.dns_name.is_none() || endpoint.targets.is_none() {
-                Err(anyhow::anyhow!("ExternalDNS did not give enough data"))?
+                Err(eyre::eyre!("ExternalDNS did not give enough data"))?;
             }
             let targets = endpoint.targets.as_ref().unwrap();
             let dns_name = endpoint.dns_name.as_ref().unwrap();
@@ -142,7 +154,7 @@ impl Display for EndpointED {
             match endpoint.record_type {
                 Some(RecordType::A) => {
                     for target in targets {
-                        f.write_fmt(format_args!("address=/{}/{}\n", dns_name, target))?
+                        f.write_fmt(format_args!("address=/{dns_name}/{target}\n"))?;
                     }
                 }
                 Some(RecordType::CNAME) => {
@@ -151,49 +163,51 @@ impl Display for EndpointED {
                         .map(|ttl| format!(",{ttl}"))
                         .unwrap_or_default();
                     for target in targets {
-                        f.write_fmt(format_args!("cname={},{}{ttl}\n", dns_name, target))?
+                        f.write_fmt(format_args!("cname={dns_name},{target}{ttl}\n"))?;
                     }
                 }
                 Some(RecordType::TXT) => {
                     let targets = targets
                         .iter()
-                        .map(|t| format!(",{}", t))
+                        .map(|t| format!(",{t}"))
                         .collect::<Vec<_>>()
                         .concat();
-                    f.write_fmt(format_args!("txt-record={}{}", dns_name, targets))?
+                    f.write_fmt(format_args!("txt-record={dns_name}{targets}"))?;
                 }
                 Some(RecordType::PTR) => f.write_fmt(format_args!(
                     "ptr-record={},{}",
                     dns_name,
-                    targets.first().ok_or(anyhow!(""))?
+                    targets
+                        .first()
+                        .ok_or_else(|| eyre!("No target found in PTR request"))?
                 ))?,
                 _ => {
-                    log::info!("Unsupported ExternalDNS endpoint: {endpoint:?}")
+                    log::info!("Unsupported ExternalDNS endpoint: {endpoint:?}");
                 }
-            };
-            f.write_str("\n")?
+            }
+            f.write_str("\n")?;
+            Ok(())
         };
+        let y: eyre::Result<()> = try_block();
         match y {
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
             Err(e) => {
                 log::error!("{e:?}");
-                Err(std::fmt::Error::default())
+                Err(std::fmt::Error)
             }
         }
     }
 }
 impl FromStr for EndpointED {
-    type Err = anyhow::Error;
+    type Err = eyre::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let mut lines = s.lines();
         let first_line = lines
             .next()
             .and_then(|l| l.strip_prefix("# "))
-            .ok_or(anyhow!(
-                "Input does not contain a commented first line: {s}"
-            ))?;
+            .ok_or_else(|| eyre!("Input does not contain a commented first line: {s}"))?;
         let endpoint = serde_json::from_str(first_line)?;
-        Ok(EndpointED(endpoint))
+        Ok(Self(endpoint))
     }
 }

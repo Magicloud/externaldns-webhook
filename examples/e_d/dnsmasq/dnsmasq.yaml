@@ -17,7 +17,7 @@ spec:
       containers:
       - name: dnsmasq
         image: localhost:5000/dnsmasq:e_d
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 53
           protocol: TCP

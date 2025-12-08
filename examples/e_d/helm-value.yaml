@@ -1,9 +1,17 @@
 policy: sync
 
+serviceMonitor:
+  enabled: true
+
 extraVolumes:
 - name: conf
   hostPath:
     path: /mnt/data/conf/dnsmasq/
+
+sources:
+  - service
+  - ingress
+  - crd
 
 provider:
   name: webhook

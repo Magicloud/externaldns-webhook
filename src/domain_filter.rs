@@ -2,10 +2,10 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as, skip_serializing_none};
 
-/// The way to inform ExternalDNS what kind of domains the DNS service provider
+/// The way to inform External-DNS what kind of domains the DNS service provider
 /// could handle.
 /// The domain names used here does not accept the trailing dot.
-/// I did not see it mentioned in ExternalDNS doc, so does not trim here.
+/// I did not see it mentioned in External-DNS doc, so does not trim here.
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -33,12 +33,12 @@ mod tests {
             include: None,
             exclude: Some(vec!["example.org".to_string()]),
         });
-        assert_eq!(json.unwrap(), r##"{"exclude":["example.org"]}"##);
+        assert_eq!(json.unwrap(), r#"{"exclude":["example.org"]}"#);
 
         let json = serde_json::to_string(&DomainFilter::Regex {
             regex_include: Some(Regex::new("[0-9]a").unwrap()),
             regex_exclude: None,
         });
-        assert_eq!(json.unwrap(), r##"{"regexInclude":"[0-9]a"}"##);
+        assert_eq!(json.unwrap(), r#"{"regexInclude":"[0-9]a"}"#);
     }
 }

@@ -4,18 +4,18 @@ use serde_with::{DefaultOnNull, serde_as};
 
 /// Pair with direction
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct FromTo<T> {
     pub from: T,
     pub to: T,
 }
 
-/// Data structure posted from ExternalDNS
-/// The data represent the changes that ExternalDNS wants to make
+/// Data structure posted from External-DNS
+/// The data represent the changes that External-DNS wants to make
 /// It is not certain that all fields would be filled in one request.
 /// Could be an Enum.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Changes {
     // Funny enough, when removing records, this field is `null`,
@@ -25,15 +25,6 @@ pub struct Changes {
     #[serde(flatten, with = "serde_fromto")]
     pub update: Vec<FromTo<Endpoint>>,
     pub delete: Vec<Endpoint>,
-}
-impl Default for Changes {
-    fn default() -> Self {
-        Self {
-            create: Default::default(),
-            update: Default::default(),
-            delete: Default::default(),
-        }
-    }
 }
 
 mod serde_fromto {
@@ -52,8 +43,8 @@ mod serde_fromto {
     impl<T> Default for FromTos<T> {
         fn default() -> Self {
             Self {
-                old: Default::default(),
-                new: Default::default(),
+                old: Vec::default(),
+                new: Vec::default(),
             }
         }
     }
@@ -101,7 +92,7 @@ mod tests {
     #[test]
     fn it_works() {
         let json: Result<Changes, _> = serde_json::from_str(
-            r##"{
+            r#"{
     "create": [
         {
             "dnsName": "nextcloud.magicloud.lan",
@@ -125,7 +116,7 @@ mod tests {
             }
         }
     ]
-}"##,
+}"#,
         );
         eprintln!("{json:?}");
     }
