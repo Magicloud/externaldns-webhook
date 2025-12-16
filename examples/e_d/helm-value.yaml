@@ -12,6 +12,7 @@ sources:
   - service
   - ingress
   - crd
+  - gateway-httproute
 
 provider:
   name: webhook
