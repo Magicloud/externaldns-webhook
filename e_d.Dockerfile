@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7-labs
 
-FROM ghcr.io/magicloud/rust-nightly:latest AS builder
+FROM ghcr.io/magicloud/rust-stable:latest AS builder
 
 RUN apk add --no-cache musl-dev g++ clang20
 
