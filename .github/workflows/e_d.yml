@@ -27,5 +27,5 @@ jobs:
         context: "{{defaultContext}}"
         push: true
         tags: |
-          ghcr.io/magicloud/e_d:${{ env.GITHUB_SHA }}
+          ghcr.io/magicloud/e_d:${{ github.sha }}
           ghcr.io/magicloud/e_d:latest
