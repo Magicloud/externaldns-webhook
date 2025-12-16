@@ -1,0 +1,31 @@
+name: ExternalDns DnsMasq Provider
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  build-n-push:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        file: "e_d.Dockerfile"
+        push: true
+        tags: |
+          ghcr.io/magicloud/e_d:${{ github.sha }}
+          ghcr.io/magicloud/e_d:latest
