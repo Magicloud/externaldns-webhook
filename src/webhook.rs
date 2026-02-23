@@ -54,9 +54,8 @@ impl Webhook {
             App::new()
                 .app_data(Data::new(x.clone()))
                 .service(get_healthz)
-                .service(get_metrics)
         })
-        .workers(2)
+        .workers(1)
         .bind((self.exposed_address.clone(), self.exposed_port))?
         .run();
 
@@ -155,16 +154,9 @@ fn media_type_guard(ctx: &GuardContext<'_>) -> bool {
         .is_some_and(|h| h.preference() == MEDIATYPE)
 }
 
-// #[logcall("debug")]
 #[get("/healthz")]
 async fn get_healthz(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
     status.healthz().await
-}
-
-// #[logcall("debug")]
-#[get("/metrics")]
-async fn get_metrics(status: Data<Arc<dyn Status>>) -> (String, StatusCode) {
-    status.metrics().await
 }
 
 #[derive(Debug)]

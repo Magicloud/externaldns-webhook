@@ -20,22 +20,19 @@ name = "e_d"
 actix-web = { version = "4" }
 tracing-actix-web = { version = "0.7" }
 eyre = { version = "0.6" }
-tokio = { version = "1.49", features = ["rt"] }
+tokio = { version = "1", features = ["rt"] }
 async-trait = { version = "0.1" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-regex = { version = "1.12" }
-serde_with = { version = "3.16" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+regex = { version = "1" }
+serde_with = { version = "3" }
 tracing = { version = "0.1" }
-prometheus = { version = "0.14" }
 
 [dev-dependencies]
 color-eyre = { version = "0.6" }
-tokio = { version = "1.49", features = ["macros", "rt-multi-thread", "fs"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs"] }
 env_logger = { version = "0.11" }
-clap = { version = "4.5", features = ["derive"] }
-metrics-prometheus = { version = "0.11" }
-metrics = { version = "0.24" }
+clap = { version = "4", features = ["derive"] }
 tracing-error = { version = "0.2" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-opentelemetry = { version = "0.32" }
@@ -45,6 +42,7 @@ opentelemetry-appender-tracing = { version = "0.31" }
 opentelemetry-otlp = { version = "0.31", default-features = false, features = [
     "logs",
     "trace",
+    "metrics",
     "grpc-tonic",
 ] }
 opentelemetry-stdout = { version = "0.31" }
