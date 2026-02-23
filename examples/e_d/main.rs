@@ -10,22 +10,21 @@
 #![allow(clippy::multiple_crate_versions)]
 #![allow(clippy::wildcard_dependencies)]
 
-use eyre::{Result, eyre};
 use async_trait::async_trait;
 use clap::Parser;
 use core::fmt::Display;
-use dashmap::DashSet;
 use externaldns_webhook::{
     Provider, Status, Webhook,
     changes::Changes,
     domain_filter::DomainFilter,
     endpoint::{Endpoint, RecordType},
 };
+use eyre::{Result, eyre};
 use logcall::logcall;
 use prometheus::Gauge;
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::{collections::HashSet, path::PathBuf};
 use tokio::{
     fs,
     io::{AsyncBufReadExt, BufReader},
@@ -103,8 +102,7 @@ impl Provider for Dnsmasq {
 
     #[logcall("info")]
     async fn apply_changes(&self, changes: Changes) -> Result<()> {
-        let endpoints: DashSet<Endpoint> =
-            self.records().await?.into_iter().collect::<DashSet<_>>();
+        let mut endpoints: HashSet<Endpoint> = self.records().await?.into_iter().collect();
         for i in changes.create {
             endpoints.insert(i);
         }

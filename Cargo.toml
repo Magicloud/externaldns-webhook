@@ -1,6 +1,6 @@
 [package]
 name = "externaldns-webhook"
-version = "2025.12.17"
+version = "2026.2.23"
 description = "Interface (trait) for ExternalDns(v0.15.0) webhook."
 edition = "2024"
 license = "Apache-2.0"
@@ -19,19 +19,18 @@ name = "e_d"
 [dependencies]
 actix-web = { version = "4" }
 eyre = { version = "0.6" }
-tokio = { version = "1.48", features = ["rt"] }
+tokio = { version = "1.49", features = ["rt"] }
 async-trait = { version = "0.1" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-regex = { version = "1.11" }
-serde_with = { version = "3.12" }
+regex = { version = "1.12" }
+serde_with = { version = "3.16" }
 log = { version = "0.4" }
 logcall = { version = "0.1" }
-dashmap = { version = "6.1", features = ["serde"] }
 prometheus = { version = "0.14" }
 
 [dev-dependencies]
-tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "fs"] }
+tokio = { version = "1.49", features = ["macros", "rt-multi-thread", "fs"] }
 env_logger = { version = "0.11" }
 clap = { version = "4.5", features = ["derive"] }
 metrics-prometheus = { version = "0.11" }
