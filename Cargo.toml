@@ -18,6 +18,7 @@ name = "e_d"
 
 [dependencies]
 actix-web = { version = "4" }
+tracing-actix-web = { version = "0.7" }
 eyre = { version = "0.6" }
 tokio = { version = "1.49", features = ["rt"] }
 async-trait = { version = "0.1" }
@@ -25,8 +26,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 regex = { version = "1.12" }
 serde_with = { version = "3.16" }
-log = { version = "0.4" }
-logcall = { version = "0.1" }
+tracing = { version = "0.1" }
 prometheus = { version = "0.14" }
 
 [dev-dependencies]
@@ -35,6 +35,18 @@ env_logger = { version = "0.11" }
 clap = { version = "4.5", features = ["derive"] }
 metrics-prometheus = { version = "0.11" }
 metrics = { version = "0.24" }
+tracing-error = { version = "0.2" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-opentelemetry = { version = "0.32" }
+opentelemetry = { version = "0.31" }
+opentelemetry_sdk = { version = "0.31" }
+opentelemetry-appender-tracing = { version = "0.31" }
+opentelemetry-otlp = { version = "0.31", default-features = false, features = [
+    "logs",
+    "trace",
+    "grpc-tonic",
+] }
+opentelemetry-stdout = { version = "0.31" }
 
 [profile.release]
 strip = true

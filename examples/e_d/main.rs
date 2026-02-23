@@ -20,7 +20,6 @@ use externaldns_webhook::{
     endpoint::{Endpoint, RecordType},
 };
 use eyre::{Result, eyre};
-use logcall::logcall;
 use prometheus::Gauge;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -29,6 +28,7 @@ use tokio::{
     fs,
     io::{AsyncBufReadExt, BufReader},
 };
+use tracing::{error, instrument};
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
@@ -67,7 +67,7 @@ struct Dnsmasq {
 }
 #[async_trait]
 impl Provider for Dnsmasq {
-    #[logcall("info")]
+    #[instrument(skip_all)]
     async fn domain_filter(&self) -> Result<DomainFilter> {
         Ok(DomainFilter::Strings {
             include: Some(vec![self.domain_name.clone()]),
@@ -75,7 +75,7 @@ impl Provider for Dnsmasq {
         })
     }
 
-    #[logcall("info")]
+    #[instrument(skip_all)]
     async fn records(&self) -> Result<Vec<Endpoint>> {
         let file = fs::OpenOptions::new()
             .read(true)
@@ -100,7 +100,7 @@ impl Provider for Dnsmasq {
         Ok(result)
     }
 
-    #[logcall("info")]
+    #[instrument(skip_all)]
     async fn apply_changes(&self, changes: Changes) -> Result<()> {
         let mut endpoints: HashSet<Endpoint> = self.records().await?.into_iter().collect();
         for i in changes.create {
@@ -180,7 +180,7 @@ impl Display for EndpointED {
                         .ok_or_else(|| eyre!("No target found in PTR request"))?
                 ))?,
                 _ => {
-                    log::info!("Unsupported ExternalDNS endpoint: {endpoint:?}");
+                    Err(eyre!("Unsupported ExternalDNS endpoint: {endpoint:?}"))?;
                 }
             }
             f.write_str("\n")?;
@@ -190,7 +190,7 @@ impl Display for EndpointED {
         match y {
             Ok(()) => Ok(()),
             Err(e) => {
-                log::error!("{e:?}");
+                error!(target: "EndpointED: Display", message = format!("{e:?}"));
                 Err(std::fmt::Error)
             }
         }

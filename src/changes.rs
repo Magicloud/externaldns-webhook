@@ -13,7 +13,7 @@ pub struct FromTo<T> {
 /// Data structure posted from External-DNS
 /// The data represent the changes that External-DNS wants to make
 /// It is not certain that all fields would be filled in one request.
-/// Could be an Enum.
+// TODO: Could be an Enum, if only one field is filled at a time?
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase", default)]

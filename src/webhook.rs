@@ -10,9 +10,9 @@ use actix_web::{
     post,
     web::{Data, Json},
 };
-use logcall::logcall;
 use serde_json::{Value, from_value};
 use std::{fmt::Display, sync::Arc};
+use tracing::{instrument, warn};
 
 /// Setup of the HTTP server
 /// The listening addresses and ports are specified in External-DNS,
@@ -29,7 +29,7 @@ pub struct Webhook {
 }
 impl Webhook {
     /// Constructor of `Webhook`.
-    #[logcall("debug")]
+    #[instrument(skip_all)]
     pub fn new(dns_manager: Arc<dyn Provider>, status: Arc<dyn Status>) -> Self {
         // As much as the http values are customizable, those are the value asked in ExternalDNS doc.
         Self {
@@ -46,7 +46,7 @@ impl Webhook {
     /// # Errors
     ///
     /// any errors that could happen
-    #[logcall(ok = "debug", err = "error")]
+    #[instrument(skip_all)]
     pub async fn start(&self) -> eyre::Result<()> {
         let x = self.status.clone();
         let exposed = HttpServer::new(move || {
@@ -82,7 +82,6 @@ impl Webhook {
 
 // Initialisation and negotiates headers and returns domain filter.
 // Returns 200/500
-#[logcall("debug")]
 #[get("/", guard = "media_type_guard")]
 async fn get_root(
     dns_manager: Data<Arc<dyn Provider>>,
@@ -96,7 +95,6 @@ async fn get_root(
 
 // Returns the current records.
 // Returns 200/500
-#[logcall("debug")]
 #[get("/records", guard = "media_type_guard")]
 async fn get_records(
     dns_manager: Data<Arc<dyn Provider>>,
@@ -110,7 +108,6 @@ async fn get_records(
 
 // Applies the changes.
 // Returns 204/500
-#[logcall("debug")]
 #[post("/records")]
 async fn post_records(
     dns_manager: Data<Arc<dyn Provider>>,
@@ -123,7 +120,7 @@ async fn post_records(
             .await
             .map_err(ErrorWraper),
         Err(e) => {
-            log::warn!("{json}");
+            warn!(target: "bad-json-incoming", message = json.to_string());
             Err(ErrorWraper(e.into()))
         }
     }
@@ -131,7 +128,6 @@ async fn post_records(
 
 // Executes the AdjustEndpoints method.
 // Returns 200/500
-#[logcall("debug")]
 #[post("/adjustendpoints", guard = "media_type_guard")]
 async fn post_adjustendpoints(
     dns_manager: Data<Arc<dyn Provider>>,
@@ -145,7 +141,7 @@ async fn post_adjustendpoints(
             .map(Json)
             .map_err(ErrorWraper),
         Err(e) => {
-            log::warn!("{json}");
+            warn!(target: "bad-json-incoming", message = json.to_string());
             Err(ErrorWraper(e.into()))
         }
     }
