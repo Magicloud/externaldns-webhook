@@ -13,6 +13,7 @@ use actix_web::{
 use serde_json::{Value, from_value};
 use std::{fmt::Display, sync::Arc};
 use tracing::{instrument, warn};
+use tracing_actix_web::TracingLogger;
 
 /// Setup of the HTTP server
 /// The listening addresses and ports are specified in External-DNS,
@@ -63,6 +64,7 @@ impl Webhook {
         let provider = HttpServer::new(move || {
             App::new()
                 .wrap(Logger::default())
+                .wrap(TracingLogger::default())
                 .app_data(Data::new(x.clone()))
                 .service(get_root)
                 .service(get_records)

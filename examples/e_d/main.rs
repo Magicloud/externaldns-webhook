@@ -20,6 +20,9 @@ use externaldns_webhook::{
     endpoint::{Endpoint, RecordType},
 };
 use eyre::{Result, eyre};
+use opentelemetry::trace::TracerProvider;
+use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
+use opentelemetry_sdk::{Resource, logs::SdkLoggerProvider, trace::SdkTracerProvider};
 use prometheus::Gauge;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -28,14 +31,75 @@ use tokio::{
     fs,
     io::{AsyncBufReadExt, BufReader},
 };
-use tracing::{error, instrument};
+use tracing::{error, info, instrument, level_filters::LevelFilter, warn};
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{
+    EnvFilter, Layer,
+    fmt::{self, format::FmtSpan},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+};
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
-    env_logger::init();
+    let log_provider = match opentelemetry_otlp::LogExporter::builder()
+        .with_tonic()
+        .build()
+    {
+        Ok(log_exporter) => SdkLoggerProvider::builder()
+            .with_resource(Resource::builder().with_service_name("e_d").build())
+            .with_batch_exporter(log_exporter)
+            .build(),
+        Err(e) => {
+            eprintln!("Cannot initialize OTLP log exporter: {e:?}");
+            SdkLoggerProvider::builder()
+                .with_batch_exporter(opentelemetry_stdout::LogExporter::default())
+                .build()
+        }
+    };
+
+    let trace_provider = match opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .build()
+    {
+        Ok(trace_exporter) => Some(
+            SdkTracerProvider::builder()
+                .with_resource(Resource::builder().with_service_name("e_d").build())
+                .with_batch_exporter(trace_exporter)
+                .build()
+                .tracer("e_d"),
+        ),
+        Err(e) => {
+            warn!(target: "OTLP", message = format!("Failed to initialize trace exporter: {e:?}"));
+            None
+        }
+    };
+
+    let r = tracing_subscriber::registry()
+        .with(
+            fmt::layer()
+                .with_span_events(FmtSpan::NONE)
+                .with_filter(EnvFilter::from_default_env()),
+        )
+        .with(ErrorLayer::default())
+        .with(OpenTelemetryTracingBridge::new(&log_provider).with_filter(LevelFilter::INFO));
+    if let Some(tp) = trace_provider {
+        r.with(
+            tracing_opentelemetry::layer()
+                .with_tracer(tp)
+                .with_filter(LevelFilter::INFO),
+        )
+        .try_init()?;
+    } else {
+        r.try_init()?;
+    }
+
+    color_eyre::install()?;
+
     let recorder = metrics_prometheus::install();
     let g = Gauge::new("total_records", "Total number of current holding FQDNs.")?;
     recorder.register_metric(g.clone());
+
     let args = Args::parse();
 
     let provider = Arc::new(Dnsmasq {
@@ -102,14 +166,26 @@ impl Provider for Dnsmasq {
 
     #[instrument(skip_all)]
     async fn apply_changes(&self, changes: Changes) -> Result<()> {
+        let simple_show = |ep: &Endpoint| {
+            let empty_string = String::new();
+            let empty_vec = Vec::new();
+            format!(
+                "{}/{}",
+                ep.dns_name.as_ref().unwrap_or(&empty_string),
+                ep.targets.as_ref().unwrap_or(&empty_vec).join(",")
+            )
+        };
         let mut endpoints: HashSet<Endpoint> = self.records().await?.into_iter().collect();
         for i in changes.create {
+            info!(target: "e_d report", message = format!("Insert: {}", simple_show(&i)));
             endpoints.insert(i);
         }
         for i in changes.delete {
+            info!(target: "e_d report", message = format!("Delete: {}", simple_show(&i)));
             endpoints.remove(&i);
         }
         for i in changes.update {
+            info!(target: "e_d report", message = format!("Update: {} -> {}", simple_show(&i.from), simple_show(&i.to)));
             endpoints.remove(&i.from);
             endpoints.insert(i.to);
         }

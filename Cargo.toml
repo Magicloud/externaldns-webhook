@@ -30,6 +30,7 @@ tracing = { version = "0.1" }
 prometheus = { version = "0.14" }
 
 [dev-dependencies]
+color-eyre = { version = "0.6" }
 tokio = { version = "1.49", features = ["macros", "rt-multi-thread", "fs"] }
 env_logger = { version = "0.11" }
 clap = { version = "4.5", features = ["derive"] }
