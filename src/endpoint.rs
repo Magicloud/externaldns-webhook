@@ -1,7 +1,7 @@
-use dashmap::DashMap;
+use std::{collections::HashMap, hash::Hash};
+
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use std::hash::Hash;
 
 /// DNS record with extra infor used by External-DNS
 /// From sample code, all fields are marked optional. I highly doubt that.
@@ -17,8 +17,8 @@ pub struct Endpoint {
     pub set_identifier: Option<String>,
     #[serde(rename = "recordTTL")]
     pub record_ttl: Option<i64>,
-    pub labels: Option<DashMap<String, String>>,
-    pub provider_specific: Option<DashMap<String, String>>,
+    pub labels: Option<HashMap<String, String>>,
+    pub provider_specific: Option<HashMap<String, String>>,
 }
 impl PartialEq for Endpoint {
     fn eq(&self, other: &Self) -> bool {

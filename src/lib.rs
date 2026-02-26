@@ -9,7 +9,6 @@
 #![allow(clippy::future_not_send)]
 #![allow(clippy::multiple_crate_versions)]
 #![allow(clippy::wildcard_dependencies)]
-#![allow(clippy::ignored_unit_patterns)] // triggered by logcall usage
 #![doc = include_str!("../README.md")]
 
 pub mod changes;

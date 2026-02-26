@@ -20,7 +20,7 @@ provider:
     imagePullPolicy: Always
     image:
       repository: localhost:5000/e_d
-      tag: "latest"
+      tag: "test12"
     args:
     - --domain-name
     - magicloud.lan
@@ -29,6 +29,13 @@ provider:
     env:
     - name: RUST_LOG
       value: debug
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      # In various places, this value is written without "http://". That does not work.
+      value: http://alloy.monitoring.svc.cluster.local:4317
+    - name: OTEL_EXPORTER_OTLP_INSECURE
+      value: "true"
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: grpc
     extraVolumeMounts:
     - name: conf
       mountPath: /etc/dnsmasq.d/
